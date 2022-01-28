@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace WordlHelper
 {
@@ -16,22 +17,63 @@ namespace WordlHelper
 
         public BoxState[] Boxes = new BoxState[NUM_BOXES];
 
+        private string _currentWord = string.Empty;
+        private Color _defaultBackColor = Color.Gray;
+
+        public bool IsValid
+        {
+            get
+            {
+                bool isValid = true;
+                foreach (var box in Boxes)
+                {
+                    if (string.IsNullOrEmpty(box.Box.Text.Trim()))
+                        isValid = false;
+                }
+
+                return isValid;
+            }
+        }
+
+        public string Word
+        {
+            get
+            {
+                return _currentWord;
+            }
+        }
+
         public GuessBoxes()
         {
             InitializeComponent();
+            _defaultBackColor = this.BackColor;
+
+            this.GotFocus += GuessBoxes_GotFocus;
+            this.LostFocus += GuessBoxes_LostFocus;
             InitBoxes();
+        }
+
+        private void GuessBoxes_LostFocus(object sender, EventArgs e)
+        {
+            this.BackColor = _defaultBackColor;
+        }
+
+        private void GuessBoxes_GotFocus(object sender, EventArgs e)
+        {
+            this.BackColor = Color.Khaki;
         }
 
         private void InitBoxes()
         {
             for (int i = 0; i < NUM_BOXES; i++)
             {
-                var box = new TextBox();
+                var box = new Label();
                 box.MouseDoubleClick += Box_MouseDoubleClick;
-                box.KeyUp += Box_KeyUp;
-                box.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-                box.TextAlign = HorizontalAlignment.Center;
-                box.MaxLength = 1;
+                box.Click += Box_Click;
+                box.Font = new Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+                box.TextAlign = ContentAlignment.MiddleCenter;
+                box.AutoSize = false;
+                box.Dock = DockStyle.Fill;
                 box.Tag = i;
                 Boxes[i] = new BoxState(box);
                 boxLayoutPanel.Controls.Add(box, i, 0);
@@ -40,39 +82,29 @@ namespace WordlHelper
             SetColors();
         }
 
+        private void SetBoxValues()
+        {
+            for (int i = 0; i < NUM_BOXES; i++)
+            {
+                var box = Boxes[i];
+
+                if (i < _currentWord.Length)
+                    box.Box.Text = _currentWord[i].ToString();
+                else
+                    box.Box.Text = string.Empty;
+            }
+        }
+
         public void Clear()
         {
+            _currentWord = string.Empty;
             foreach (var box in Boxes)
             {
                 box.State = GuessState.NotInWord;
-                box.Box.Clear();
+                box.Box.Text = string.Empty;
             }
 
             SetColors();
-        }
-
-        private void Box_KeyUp(object sender, KeyEventArgs e)
-        {
-            var senderBox = sender as TextBox;
-            var nextIdx = (int)senderBox.Tag;
-
-
-            if (e.KeyCode == Keys.Back)
-            {
-                if (nextIdx - 1 >= 0)
-                    nextIdx--;
-            }
-            else
-            {
-                if (!string.IsNullOrEmpty(senderBox.Text.Trim()))
-                {
-                    if (nextIdx + 1 < NUM_BOXES)
-                        nextIdx++;
-                }
-            }
-
-            Boxes[nextIdx].Box.Focus();
-
         }
 
         private GuessState NextState(GuessState current)
@@ -107,6 +139,28 @@ namespace WordlHelper
             }
         }
 
+        private void clearButton_Click(object sender, EventArgs e)
+        {
+            Clear();
+        }
+
+        private void GuessBoxes2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Back)
+            {
+                if (_currentWord.Length > 0)
+                    _currentWord = _currentWord.Remove(_currentWord.Length - 1);
+            }
+            else
+            {
+                var kc = new KeysConverter();
+                if (_currentWord.Length < NUM_BOXES)
+                    _currentWord += kc.ConvertToString(e.KeyData);
+            }
+
+            SetBoxValues();
+        }
+
         private void Box_MouseDoubleClick(object sender, MouseEventArgs e)
         {
             var state = Boxes[(int)((Control)sender).Tag].State;
@@ -114,28 +168,10 @@ namespace WordlHelper
             SetColors();
         }
 
-        private void clearButton_Click(object sender, EventArgs e)
+        private void Box_Click(object sender, EventArgs e)
         {
-            Clear();
+            this.Focus();
         }
     }
 
-    public class BoxState
-    {
-        public TextBox Box { get; set; }
-        public GuessState State { get; set; }
-
-        public BoxState(TextBox box)
-        {
-            Box = box;
-            State = GuessState.NotInWord;
-        }
-    }
-
-    public enum GuessState
-    {
-        NotInWord,
-        CorrectPosition,
-        IncorrectPosition
-    }
 }

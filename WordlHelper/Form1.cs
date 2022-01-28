@@ -21,11 +21,63 @@ namespace WordlHelper
         private List<string> _possibleWords;
         private GuessBoxes[] _guessBoxes = new GuessBoxes[NUM_GUESSES];
 
+        private string _selectedWord = string.Empty;
+        private bool _isPlaying = false;
+
         public Form1()
         {
             InitializeComponent();
             InitGuessBoxes();
             InitWords();
+        }
+
+        private void StartPlay()
+        {
+            Reset();
+            _isPlaying = true;
+
+            var rnd = new Random();
+            _selectedWord = _allWords[rnd.Next(_allWords.Length)];
+            selectedWordLabel.Text = $"Word: {_selectedWord}";
+        }
+
+        private void SetStates()
+        {
+            if (!_isPlaying)
+                return;
+
+            foreach (var boxes in _guessBoxes)
+            {
+                if (boxes.IsValid)
+                {
+                    var mismatches2 = boxes.Word.Except(_selectedWord).ToList();
+                    var matches = boxes.Word.Intersect(_selectedWord).ToList();
+                    var boxLetterCounts = boxes.Word.GroupBy(c => c).ToDictionary(k => k.Key, e => e.Count());
+                    var selectedLetterCounts = _selectedWord.GroupBy(c => c).ToDictionary(k => k.Key, e => e.Count());
+
+
+                    for (int i = 0; i < boxes.Word.Length; i++)
+                    {
+                        var boxLetter = boxes.Word[i].ToString();
+                        var selectLetter = _selectedWord[i].ToString();
+
+                        if (selectLetter == boxLetter)
+                        {
+                            boxes.Boxes[i].State = GuessState.CorrectPosition;
+                        }
+                        else if (selectLetter != boxLetter && _selectedWord.Contains(boxLetter))
+                        {
+                            boxes.Boxes[i].State = GuessState.IncorrectPosition;
+                        }
+                        else
+                        {
+                            boxes.Boxes[i].State = GuessState.NotInWord;
+                        }
+                    }
+                }
+
+                boxes.SetColors();
+            }
         }
 
         private void AnalyzeGuesses()
@@ -34,35 +86,83 @@ namespace WordlHelper
             var correctPos = new string[5];
             var notInWord = new HashSet<string>();
 
+            var boxWords = new List<string>();
             foreach (var boxes in _guessBoxes)
             {
-                for (int i = 0; i < boxes.Boxes.Length; i++)
+                boxWords.Add(boxes.Word);
+
+                for (int i = 0; i < boxes.Word.Length; i++)
                 {
                     var state = boxes.Boxes[i];
-                    state.Box.Text = state.Box.Text.Trim();
+                    var boxLetter = boxes.Word[i].ToString();
 
-                    if (!string.IsNullOrEmpty(state.Box.Text))
+                    if (!string.IsNullOrEmpty(boxLetter))
                     {
                         switch (state.State)
                         {
                             case GuessState.CorrectPosition:
-                                correctPos[i] = state.Box.Text;
+                                correctPos[i] = boxLetter;
                                 break;
                             case GuessState.IncorrectPosition:
-                                incorrectPos[i] = state.Box.Text;
+                                incorrectPos[i] = boxLetter;
                                 break;
                             case GuessState.NotInWord:
-                                if (!correctPos.Contains(state.Box.Text))
-                                    notInWord.Add(state.Box.Text);
+                                if (!correctPos.Contains(boxLetter))
+                                    notInWord.Add(boxLetter);
                                 break;
                         }
                     }
                 }
             }
 
+            notInWord = notInWord.Except(correctPos.ToList()).ToHashSet();
+
             _possibleWords = GetPossibleWords(notInWord, incorrectPos, correctPos, _allWords.ToList());
+            _possibleWords = SortByDistribution(_possibleWords);
+            _possibleWords = _possibleWords.Except(boxWords).ToList();
 
             UpdatePossibleList();
+        }
+
+        private List<string> SortByDistribution(List<string> words)
+        {
+            var dists = new Dictionary<char, int>();
+
+            foreach (var word in words)
+            {
+                foreach (var letter in word)
+                {
+                    if (!dists.ContainsKey(letter))
+                        dists.Add(letter, 1);
+                    else
+                        dists[letter]++;
+                }
+            }
+
+            var ranks = new Dictionary<string, int>();
+
+            foreach (var word in words)
+            {
+                if (!ranks.ContainsKey(word))
+                    ranks.Add(word, 0);
+
+                char lastLet = ' ';
+                foreach (var letter in word)
+                {
+                    if (letter != lastLet)
+                    {
+                        ranks[word] += dists[letter];
+                    }
+                    lastLet = letter;
+                }
+            }
+
+            var rankSort = ranks.ToList();
+            rankSort = rankSort.OrderByDescending(r => r.Value).ToList();
+
+            var ret = new List<string>();
+            rankSort.ForEach(r => ret.Add(r.Key));
+            return ret;
         }
 
         private void UpdatePossibleList()
@@ -71,10 +171,15 @@ namespace WordlHelper
 
             possibleWordsBox.SuspendLayout();
             possibleWordsBox.Clear();
+
+            var sb = new StringBuilder();
             foreach (var word in _possibleWords)
             {
-                possibleWordsBox.AppendText(word + "\n");
+                sb.AppendLine(word);
             }
+
+            possibleWordsBox.Text = sb.ToString();
+
             possibleWordsBox.ResumeLayout();
         }
 
@@ -118,13 +223,19 @@ namespace WordlHelper
                 bool hasAll = true;
                 foreach (var let in incorrectPos)
                 {
-
                     if (let != null && !word.Contains(let))
                         hasAll = false;
+
                 }
 
                 if (!hasAll)
                     removes.Add(word);
+
+                for (int i = 0; i < incorrectPos.Length; i++)
+                {
+                    if (word[i].ToString() == incorrectPos[i])
+                        removes.Add(word);
+                }
             }
 
             possibles = possibles.Except(removes).ToList();
@@ -149,6 +260,12 @@ namespace WordlHelper
             var cleaned = Regex.Replace(inputText.First(), @"\s+", "");
             cleaned = cleaned.Replace("\"", "");
             var words = cleaned.Split(',');
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                words[i] = words[i].ToUpper();
+            }
+
             _allWords = words;
             _possibleWords = words.ToList();
         }
@@ -214,18 +331,27 @@ namespace WordlHelper
 
         private void Reset()
         {
+            _isPlaying = false;
+            _selectedWord = string.Empty;
+
             possibleWordsBox.Clear();
+            selectedWordLabel.Text = "";
 
             foreach (var box in _guessBoxes)
             {
                 box.Clear();
             }
 
-            _guessBoxes.First().Boxes.First().Box.Focus();
+            UpdatePossibleList();
+
+            _guessBoxes.First().Focus();
         }
 
         private void analyzeButton_Click(object sender, EventArgs e)
         {
+            if (_isPlaying)
+                SetStates();
+
             AnalyzeGuesses();
         }
 
@@ -242,6 +368,11 @@ namespace WordlHelper
         private void loadButton_Click(object sender, EventArgs e)
         {
             LoadState();
+        }
+
+        private void playButton_Click(object sender, EventArgs e)
+        {
+            StartPlay();
         }
     }
 }

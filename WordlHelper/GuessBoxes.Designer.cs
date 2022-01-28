@@ -64,13 +64,14 @@
             this.clearButton.UseVisualStyleBackColor = true;
             this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
-            // GuessBoxes
+            // GuessBoxes2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.boxLayoutPanel);
-            this.Name = "GuessBoxes";
+            this.Name = "GuessBoxes2";
             this.Size = new System.Drawing.Size(377, 70);
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.GuessBoxes2_KeyDown);
             this.boxLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 

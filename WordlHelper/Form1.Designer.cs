@@ -35,6 +35,8 @@
             this.matchesCountLabel = new System.Windows.Forms.Label();
             this.saveButton = new System.Windows.Forms.Button();
             this.loadButton = new System.Windows.Forms.Button();
+            this.playButton = new System.Windows.Forms.Button();
+            this.selectedWordLabel = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // guessBoxesPanel
@@ -114,11 +116,33 @@
             this.loadButton.UseVisualStyleBackColor = true;
             this.loadButton.Click += new System.EventHandler(this.loadButton_Click);
             // 
+            // playButton
+            // 
+            this.playButton.Location = new System.Drawing.Point(167, 556);
+            this.playButton.Name = "playButton";
+            this.playButton.Size = new System.Drawing.Size(91, 35);
+            this.playButton.TabIndex = 7;
+            this.playButton.Text = "Play";
+            this.playButton.UseVisualStyleBackColor = true;
+            this.playButton.Click += new System.EventHandler(this.playButton_Click);
+            // 
+            // selectedWordLabel
+            // 
+            this.selectedWordLabel.AutoSize = true;
+            this.selectedWordLabel.Location = new System.Drawing.Point(164, 596);
+            this.selectedWordLabel.Name = "selectedWordLabel";
+            this.selectedWordLabel.Size = new System.Drawing.Size(39, 13);
+            this.selectedWordLabel.TabIndex = 8;
+            this.selectedWordLabel.Text = "Word: ";
+            this.selectedWordLabel.Visible = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(866, 623);
+            this.Controls.Add(this.selectedWordLabel);
+            this.Controls.Add(this.playButton);
             this.Controls.Add(this.loadButton);
             this.Controls.Add(this.saveButton);
             this.Controls.Add(this.matchesCountLabel);
@@ -143,6 +167,8 @@
         private System.Windows.Forms.Label matchesCountLabel;
         private System.Windows.Forms.Button saveButton;
         private System.Windows.Forms.Button loadButton;
+        private System.Windows.Forms.Button playButton;
+        private System.Windows.Forms.Label selectedWordLabel;
     }
 }
 
