@@ -29,16 +29,20 @@
         private void InitializeComponent()
         {
             this.boxLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            this.clearButton = new System.Windows.Forms.Button();
+            this.boxLayoutPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // boxLayoutPanel
             // 
-            this.boxLayoutPanel.ColumnCount = 5;
+            this.boxLayoutPanel.ColumnCount = 6;
             this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
             this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 20F));
+            this.boxLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.boxLayoutPanel.Controls.Add(this.clearButton, 5, 0);
             this.boxLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.boxLayoutPanel.Location = new System.Drawing.Point(0, 0);
             this.boxLayoutPanel.Name = "boxLayoutPanel";
@@ -47,6 +51,19 @@
             this.boxLayoutPanel.Size = new System.Drawing.Size(377, 70);
             this.boxLayoutPanel.TabIndex = 0;
             // 
+            // clearButton
+            // 
+            this.clearButton.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.clearButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.clearButton.Location = new System.Drawing.Point(358, 3);
+            this.clearButton.Name = "clearButton";
+            this.clearButton.Size = new System.Drawing.Size(16, 64);
+            this.clearButton.TabIndex = 0;
+            this.clearButton.TabStop = false;
+            this.clearButton.Text = "X";
+            this.clearButton.UseVisualStyleBackColor = true;
+            this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
+            // 
             // GuessBoxes
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -54,6 +71,7 @@
             this.Controls.Add(this.boxLayoutPanel);
             this.Name = "GuessBoxes";
             this.Size = new System.Drawing.Size(377, 70);
+            this.boxLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -61,5 +79,6 @@
         #endregion
 
         private System.Windows.Forms.TableLayoutPanel boxLayoutPanel;
+        private System.Windows.Forms.Button clearButton;
     }
 }

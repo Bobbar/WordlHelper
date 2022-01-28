@@ -113,6 +113,11 @@ namespace WordlHelper
             Boxes[(int)((Control)sender).Tag].State = NextState(state);
             SetColors();
         }
+
+        private void clearButton_Click(object sender, EventArgs e)
+        {
+            Clear();
+        }
     }
 
     public class BoxState
