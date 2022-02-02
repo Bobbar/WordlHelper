@@ -20,32 +20,46 @@ namespace WordlHelper
         private string _currentWord = string.Empty;
         private Color _defaultBackColor = Color.Gray;
 
+        public int Index { get; set; }
+
         public bool IsValid
         {
             get
             {
-                bool isValid = true;
-                foreach (var box in Boxes)
-                {
-                    if (string.IsNullOrEmpty(box.Box.Text.Trim()))
-                        isValid = false;
-                }
 
-                return isValid;
+                return !string.IsNullOrEmpty(_currentWord);
             }
         }
 
         public string Word
         {
+            set
+            {
+                _currentWord = value;
+                SetBoxValues();
+            }
+
             get
             {
                 return _currentWord;
             }
         }
 
-        public GuessBoxes()
+        public bool IsMatch
+        {
+            get
+            {
+                return Boxes.All(b => b.State == GuessState.CorrectPosition);
+            }
+
+        }
+
+        public event EventHandler EnterKeyPressed;
+
+        public GuessBoxes(int index)
         {
             InitializeComponent();
+            Index = index;
             _defaultBackColor = this.BackColor;
 
             this.GotFocus += GuessBoxes_GotFocus;
@@ -53,14 +67,22 @@ namespace WordlHelper
             InitBoxes();
         }
 
+        private void OnEnterKeyPressed()
+        {
+            EnterKeyPressed?.Invoke(this, new EventArgs());
+        }
+
         private void GuessBoxes_LostFocus(object sender, EventArgs e)
         {
             this.BackColor = _defaultBackColor;
+            this.BorderStyle = BorderStyle.None;
+
         }
 
         private void GuessBoxes_GotFocus(object sender, EventArgs e)
         {
-            this.BackColor = Color.Khaki;
+            this.BackColor = Color.SkyBlue;
+            this.BorderStyle = BorderStyle.FixedSingle;
         }
 
         private void InitBoxes()
@@ -150,6 +172,10 @@ namespace WordlHelper
             {
                 if (_currentWord.Length > 0)
                     _currentWord = _currentWord.Remove(_currentWord.Length - 1);
+            }
+            else if (e.KeyCode == Keys.Enter)
+            {
+                OnEnterKeyPressed();
             }
             else
             {
