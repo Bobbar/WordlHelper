@@ -77,6 +77,7 @@ namespace WordlHelper
 
         private void OnBoxSelected()
         {
+            this.Focus();
             BoxSelected?.Invoke(this, Index);
         }
 
