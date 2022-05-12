@@ -50,6 +50,7 @@
             this.boxLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.boxLayoutPanel.Size = new System.Drawing.Size(377, 70);
             this.boxLayoutPanel.TabIndex = 0;
+            this.boxLayoutPanel.MouseClick += new System.Windows.Forms.MouseEventHandler(this.boxLayoutPanel_MouseClick);
             // 
             // clearButton
             // 
@@ -64,14 +65,14 @@
             this.clearButton.UseVisualStyleBackColor = true;
             this.clearButton.Click += new System.EventHandler(this.clearButton_Click);
             // 
-            // GuessBoxes2
+            // GuessBoxes
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.boxLayoutPanel);
-            this.Name = "GuessBoxes2";
+            this.Name = "GuessBoxes";
             this.Size = new System.Drawing.Size(377, 70);
-            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.GuessBoxes2_KeyDown);
+            this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.GuessBoxes_PreviewKeyDown);
             this.boxLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 

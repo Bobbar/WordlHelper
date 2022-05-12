@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using Fastenshtein;
 
 namespace WordlHelper
 {
@@ -23,12 +24,24 @@ namespace WordlHelper
         private string _selectedWord = string.Empty;
         private bool _isPlaying = false;
         private bool _debug = true;
+        private int _lastSelectedBoxIdx = -1;
+        private Dictionary<string, string> _distinctLetters = new Dictionary<string, string>();
 
         public Form1()
         {
             InitializeComponent();
             InitGuessBoxes();
             InitWords();
+
+            this.Show();
+            this.Invalidate();
+            var prevText = this.Text;
+            this.Invalidate();
+            this.Refresh();
+
+            SortByLetterCounts(_allWords);
+
+            AnalyzeGuesses(_allWords.ToList());
         }
 
         private void StartPlay()
@@ -37,7 +50,15 @@ namespace WordlHelper
             _isPlaying = true;
 
             var rnd = new Random();
-            _selectedWord = _allWords[rnd.Next(_allWords.Count)];
+
+            testWordTextBox.Text = testWordTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(testWordTextBox.Text))
+                _selectedWord = _allWords[rnd.Next(_allWords.Count)];
+            else
+                _selectedWord = testWordTextBox.Text;
+
+            //_selectedWord = "WACKE";
 
             selectedWordLabel.Text = $"Word: {_selectedWord}";
             wordSelectedLabel.Visible = true;
@@ -82,9 +103,7 @@ namespace WordlHelper
             var incorrectPos = new string[5];
             var correctPos = new string[5];
             var notInWord = new HashSet<string>();
-
             var boxWords = new List<string>();
-
             int guesses = 0;
 
             foreach (var boxes in _guessBoxes)
@@ -119,9 +138,11 @@ namespace WordlHelper
             }
 
             notInWord = notInWord.Except(correctPos.ToList()).ToHashSet();
+            notInWord = notInWord.Except(incorrectPos.ToList()).ToHashSet();
 
-            _possibleWords = GetPossibleWords(notInWord, incorrectPos, correctPos, _allWords.ToList());
+            _possibleWords = GetPossibleWords(notInWord, incorrectPos, correctPos, allwords);
             _possibleWords = _possibleWords.Except(boxWords).ToList();
+            _possibleWords = SortByLetterCounts(_possibleWords);
 
             if (updateUI)
                 UpdatePossibleList();
@@ -131,18 +152,11 @@ namespace WordlHelper
         {
             matchesCountLabel.Text = $"Count: {_possibleWords.Count}";
 
-            possibleWordsBox.SuspendLayout();
-            possibleWordsBox.Clear();
+            possibleWordsList.SuspendLayout();
 
-            var sb = new StringBuilder();
-            foreach (var word in _possibleWords)
-            {
-                sb.AppendLine(word);
-            }
+            possibleWordsList.DataSource = _possibleWords;
 
-            possibleWordsBox.Text = sb.ToString();
-
-            possibleWordsBox.ResumeLayout();
+            possibleWordsList.ResumeLayout();
         }
 
         private static List<string> GetPossibleWords(HashSet<string> notInWord, string[] incorrectPos, string[] correctPos, List<string> allWords)
@@ -153,6 +167,7 @@ namespace WordlHelper
             // First filter words by known correct letters.
             var mustContain = incorrectPos.Where(i => i != null).ToList();
             mustContain.AddRange(correctPos.Where(c => c != null).ToList());
+            mustContain = mustContain.Distinct().ToList();
             possibles = possibles.FindAll(w => mustContain.All(m => w.Contains(m)));
 
             // Remove words without letter in correct position.
@@ -198,19 +213,43 @@ namespace WordlHelper
             return possibles;
         }
 
-        private void InitGuessBoxes()
+        private void InitGuessBoxes(bool updateUI = true)
         {
+            guessBoxesPanel.Controls.Clear();
+
             for (int i = 0; i < NUM_GUESSES; i++)
             {
-                var guessBox = new GuessBoxes(i);
+                if (_guessBoxes[i] != null)
+                {
+                    _guessBoxes[i].EnterKeyPressed -= GuessBox_EnterKeyPressed;
+                    _guessBoxes[i].BoxSelected -= GuessBox_BoxSelected;
+                }
+
+                var guessBox = new GuessBoxes(i, updateUI);
                 guessBox.EnterKeyPressed += GuessBox_EnterKeyPressed;
+                guessBox.BoxSelected += GuessBox_BoxSelected;
+
                 guessBoxesPanel.Controls.Add(guessBox, 0, i);
                 _guessBoxes[i] = guessBox;
             }
         }
 
+        private void HighlightBox(int idx)
+        {
+            _lastSelectedBoxIdx = idx;
+
+            for (int i = 0; i < _guessBoxes.Length; i++)
+            {
+                if (i == idx)
+                    _guessBoxes[i].HighlightBox();
+                else
+                    _guessBoxes[i].UnHighlightBox();
+            }
+        }
+
         private void InitWords()
         {
+            // Parse the word list to a string array.
             var inputPath = $@"{Environment.CurrentDirectory}\words.txt";
             var inputText = File.ReadAllLines(inputPath).ToList();
             var cleaned = Regex.Replace(inputText.First(), @"\s+", "");
@@ -291,33 +330,99 @@ namespace WordlHelper
             _selectedWord = string.Empty;
             _possibleWords = _allWords.ToList();
 
-            possibleWordsBox.Clear();
             selectedWordLabel.Text = "";
             wordSelectedLabel.Visible = false;
-
 
             foreach (var box in _guessBoxes)
             {
                 box.Clear();
             }
 
+            AnalyzeGuesses(_allWords, false);
+
             UpdatePossibleList();
+
+            InitGuessBoxes();
 
             _guessBoxes.First().Focus();
         }
 
+        /// <summary>
+        /// Sorts the word list by number of unique letter occurrences.
+        /// </summary>
+        /// <param name="words"></param>
+        /// <returns></returns>
+        /// <remarks>
+        /// The idea is to prioritize words that will eliminate the maximum number of possible words.
+        /// </remarks>
+        private List<string> SortByLetterCounts(List<string> words)
+        {
+            // Record the distinct letters for each word.
+            // We don't want duplicate letters to contribute to the rank.
+            // Cached for speed.
+            if (_distinctLetters.Count == 0)
+            {
+                foreach (var word in words)
+                {
+                    var letters = new string(word.Distinct().ToArray());
+                    _distinctLetters.Add(word, letters);
+                }
+            }
+
+            // Accumulate the number of letter occurrences for each word in the list.
+            var counts = new Dictionary<char, int>();
+            foreach (var word in words)
+            {
+                var letters = _distinctLetters[word];
+
+                foreach (var letter in letters)
+                {
+                    if (!counts.ContainsKey(letter))
+                        counts.Add(letter, 1);
+                    else
+                        counts[letter] += 1;
+                }
+            }
+
+            // Now use the letter counts and rank each word.
+            var rWords = new string[words.Count];
+            var rRanks = new int[words.Count];
+            for (int idx = 0; idx < words.Count; idx++)
+            {
+                var word = words[idx];
+                var letters = _distinctLetters[word];
+                int rank = 0;
+                foreach (var letter in letters)
+                {
+                    rank += counts[letter];
+                }
+
+                rWords[idx] = word;
+                rRanks[idx] = rank;
+            }
+
+            // Sort the words by rank in descending order.
+            Array.Sort(rRanks, rWords);
+            Array.Reverse(rWords);
+
+            return rWords.ToList();
+        }
+
         private void Test()
         {
-            var rnd = new Random(0);
+            InitGuessBoxes(false);
+
+            var rnd = new Random(5464);
             int wins = 0;
-            int games = _allWords.Count;
+            int games = 500;//_allWords.Count;
             var failed = new List<string>();
             var usedWords = new List<string>();
+            var failGuesses = new Dictionary<string, List<string>>();
+
             this.SuspendLayout();
 
             var timer = new System.Diagnostics.Stopwatch();
             timer.Restart();
-
 
             for (int i = 0; i < games; i++)
             {
@@ -331,14 +436,19 @@ namespace WordlHelper
 
                 usedWords.Add(_selectedWord);
 
+                var guessWords = new List<string>();
+
                 int guesses = 0;
 
                 while (guesses < NUM_GUESSES)
                 {
-                    AnalyzeGuesses(_possibleWords, false);
+                    //AnalyzeGuesses(_possibleWords, false);
+                    AnalyzeGuesses(_allWords.ToList(), false);
 
                     var guessWord = _possibleWords.First();
                     _guessBoxes[guesses].Word = guessWord;
+
+                    guessWords.Add(guessWord);
 
                     SetBoxStates(false);
 
@@ -351,7 +461,10 @@ namespace WordlHelper
                 if (guesses < NUM_GUESSES)
                     wins++;
                 else
+                {
                     failed.Add(_selectedWord);
+                    failGuesses.Add(_selectedWord, guessWords);
+                }
 
                 if (i % 100 == 0)
                     Log($"[{i}] Word: {_selectedWord}  Guesses: {guesses}  Result: { (guesses < NUM_GUESSES) }");
@@ -375,6 +488,14 @@ namespace WordlHelper
 
             Log($"Wins: {wins} of {games}");
 
+            Log("Failed words:");
+
+            failed.ForEach(w =>
+            {
+                Log(w);
+                failGuesses[w].ForEach(g => Log($"  {g}"));
+            });
+
 
         }
 
@@ -396,6 +517,11 @@ namespace WordlHelper
             var box = sender as GuessBoxes;
             if (box.Index + 1 < _guessBoxes.Length)
                 _guessBoxes[box.Index + 1].Focus();
+        }
+
+        private void GuessBox_BoxSelected(object sender, int e)
+        {
+            HighlightBox(e);
         }
 
         private void analyzeButton_Click(object sender, EventArgs e)
@@ -434,6 +560,20 @@ namespace WordlHelper
         private void showWordCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             selectedWordLabel.Visible = showWordCheckBox.Checked;
+        }
+
+        private void possibleWordsList_DoubleClick(object sender, EventArgs e)
+        {
+            if (_lastSelectedBoxIdx > -1)
+            {
+                _guessBoxes[_lastSelectedBoxIdx].Word = possibleWordsList.SelectedItem.ToString();
+
+                if (_isPlaying)
+                {
+                    SetBoxStates();
+                    AnalyzeGuesses(_allWords.ToList());
+                }
+            }
         }
     }
 }

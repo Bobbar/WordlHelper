@@ -19,6 +19,7 @@ namespace WordlHelper
 
         private string _currentWord = string.Empty;
         private Color _defaultBackColor = Color.Gray;
+        private bool _updateUI = true;
 
         public int Index { get; set; }
 
@@ -36,7 +37,8 @@ namespace WordlHelper
             set
             {
                 _currentWord = value;
-                SetBoxValues();
+                if (_updateUI)
+                    SetBoxValues();
             }
 
             get
@@ -55,15 +57,16 @@ namespace WordlHelper
         }
 
         public event EventHandler EnterKeyPressed;
+        public event EventHandler<int> BoxSelected;
 
-        public GuessBoxes(int index)
+
+        public GuessBoxes(int index, bool updateUI = true)
         {
             InitializeComponent();
+            _updateUI = updateUI;
             Index = index;
             _defaultBackColor = this.BackColor;
 
-            this.GotFocus += GuessBoxes_GotFocus;
-            this.LostFocus += GuessBoxes_LostFocus;
             InitBoxes();
         }
 
@@ -72,17 +75,9 @@ namespace WordlHelper
             EnterKeyPressed?.Invoke(this, new EventArgs());
         }
 
-        private void GuessBoxes_LostFocus(object sender, EventArgs e)
+        private void OnBoxSelected()
         {
-            this.BackColor = _defaultBackColor;
-            this.BorderStyle = BorderStyle.None;
-
-        }
-
-        private void GuessBoxes_GotFocus(object sender, EventArgs e)
-        {
-            this.BackColor = Color.SkyBlue;
-            this.BorderStyle = BorderStyle.FixedSingle;
+            BoxSelected?.Invoke(this, Index);
         }
 
         private void InitBoxes()
@@ -91,7 +86,7 @@ namespace WordlHelper
             {
                 var box = new Label();
                 box.MouseDoubleClick += Box_MouseDoubleClick;
-                box.Click += Box_Click;
+                box.MouseClick += Box_MouseClick;
                 box.Font = new Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
                 box.TextAlign = ContentAlignment.MiddleCenter;
                 box.AutoSize = false;
@@ -126,7 +121,11 @@ namespace WordlHelper
                 box.Box.Text = string.Empty;
             }
 
+            clearButton.Enabled = false;
+            Application.DoEvents();
             SetColors();
+            this.Focus();
+            clearButton.Enabled = true;
         }
 
         private GuessState NextState(GuessState current)
@@ -161,12 +160,43 @@ namespace WordlHelper
             }
         }
 
-        private void clearButton_Click(object sender, EventArgs e)
+        public void HighlightBox()
         {
-            Clear();
+            this.BackColor = Color.SkyBlue;
+            this.BorderStyle = BorderStyle.FixedSingle;
         }
 
-        private void GuessBoxes2_KeyDown(object sender, KeyEventArgs e)
+        public void UnHighlightBox()
+        {
+            this.BackColor = _defaultBackColor;
+            this.BorderStyle = BorderStyle.None;
+        }
+
+        private void clearButton_Click(object sender, EventArgs e)
+        {
+            OnBoxSelected();
+            Clear();
+
+        }
+
+        private void Box_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            var state = Boxes[(int)((Control)sender).Tag].State;
+            Boxes[(int)((Control)sender).Tag].State = NextState(state);
+            SetColors();
+        }
+
+        private void Box_MouseClick(object sender, MouseEventArgs e)
+        {
+            OnBoxSelected();
+        }
+
+        private void boxLayoutPanel_MouseClick(object sender, MouseEventArgs e)
+        {
+            OnBoxSelected();
+        }
+
+        private void GuessBoxes_PreviewKeyDown(object sender, PreviewKeyDownEventArgs e)
         {
             if (e.KeyCode == Keys.Back)
             {
@@ -187,17 +217,9 @@ namespace WordlHelper
             SetBoxValues();
         }
 
-        private void Box_MouseDoubleClick(object sender, MouseEventArgs e)
+        public override string ToString()
         {
-            var state = Boxes[(int)((Control)sender).Tag].State;
-            Boxes[(int)((Control)sender).Tag].State = NextState(state);
-            SetColors();
-        }
-
-        private void Box_Click(object sender, EventArgs e)
-        {
-            this.Focus();
+            return Word;
         }
     }
-
 }

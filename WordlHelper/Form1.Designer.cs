@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.guessBoxesPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.possibleWordsBox = new System.Windows.Forms.RichTextBox();
             this.analyzeButton = new System.Windows.Forms.Button();
             this.resetButton = new System.Windows.Forms.Button();
             this.matchesCountLabel = new System.Windows.Forms.Label();
@@ -42,6 +41,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.wordSelectedLabel = new System.Windows.Forms.Label();
+            this.testWordTextBox = new System.Windows.Forms.TextBox();
+            this.possibleWordsList = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // guessBoxesPanel
@@ -59,18 +60,6 @@
             this.guessBoxesPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 16.66667F));
             this.guessBoxesPanel.Size = new System.Drawing.Size(417, 453);
             this.guessBoxesPanel.TabIndex = 0;
-            // 
-            // possibleWordsBox
-            // 
-            this.possibleWordsBox.BulletIndent = 1;
-            this.possibleWordsBox.DetectUrls = false;
-            this.possibleWordsBox.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.possibleWordsBox.Location = new System.Drawing.Point(557, 28);
-            this.possibleWordsBox.Name = "possibleWordsBox";
-            this.possibleWordsBox.ReadOnly = true;
-            this.possibleWordsBox.Size = new System.Drawing.Size(243, 453);
-            this.possibleWordsBox.TabIndex = 1;
-            this.possibleWordsBox.Text = "";
             // 
             // analyzeButton
             // 
@@ -195,11 +184,32 @@
             this.wordSelectedLabel.Text = "Random word selected!";
             this.wordSelectedLabel.Visible = false;
             // 
+            // testWordTextBox
+            // 
+            this.testWordTextBox.Location = new System.Drawing.Point(90, 534);
+            this.testWordTextBox.Name = "testWordTextBox";
+            this.testWordTextBox.Size = new System.Drawing.Size(71, 20);
+            this.testWordTextBox.TabIndex = 14;
+            this.testWordTextBox.Visible = false;
+            // 
+            // possibleWordsList
+            // 
+            this.possibleWordsList.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.possibleWordsList.FormattingEnabled = true;
+            this.possibleWordsList.ItemHeight = 16;
+            this.possibleWordsList.Location = new System.Drawing.Point(562, 27);
+            this.possibleWordsList.Name = "possibleWordsList";
+            this.possibleWordsList.Size = new System.Drawing.Size(195, 452);
+            this.possibleWordsList.TabIndex = 15;
+            this.possibleWordsList.DoubleClick += new System.EventHandler(this.possibleWordsList_DoubleClick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(866, 623);
+            this.Controls.Add(this.possibleWordsList);
+            this.Controls.Add(this.testWordTextBox);
             this.Controls.Add(this.wordSelectedLabel);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -212,7 +222,6 @@
             this.Controls.Add(this.matchesCountLabel);
             this.Controls.Add(this.resetButton);
             this.Controls.Add(this.analyzeButton);
-            this.Controls.Add(this.possibleWordsBox);
             this.Controls.Add(this.guessBoxesPanel);
             this.DoubleBuffered = true;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -227,7 +236,6 @@
         #endregion
 
         private System.Windows.Forms.TableLayoutPanel guessBoxesPanel;
-        private System.Windows.Forms.RichTextBox possibleWordsBox;
         private System.Windows.Forms.Button analyzeButton;
         private System.Windows.Forms.Button resetButton;
         private System.Windows.Forms.Label matchesCountLabel;
@@ -240,6 +248,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label wordSelectedLabel;
+        private System.Windows.Forms.TextBox testWordTextBox;
+        private System.Windows.Forms.ListBox possibleWordsList;
     }
 }
 
