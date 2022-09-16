@@ -141,7 +141,6 @@
             this.testButton.TabIndex = 9;
             this.testButton.Text = "Test";
             this.testButton.UseVisualStyleBackColor = true;
-            this.testButton.Visible = false;
             this.testButton.Click += new System.EventHandler(this.testButton_Click);
             // 
             // showWordCheckBox
